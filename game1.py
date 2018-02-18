@@ -15,7 +15,7 @@ board_width = 800
 board_height = 600
 
 
-# initialize pygame & window size
+# initialize pygame & display window
 pygame.init()
 game_display = pygame.display.set_mode((board_width, board_height))
 pygame.display.set_caption("Snake")
@@ -26,8 +26,10 @@ clock = pygame.time.Clock()
 
 
 def message_to_screen(message, color):
-    screen_text = font.render(message, True, color)
-    game_display.blit(screen_text, [board_width/4, board_height/2])
+    text_surface = font.render(message, True, color)
+    text_rect = text_surface.get_rect()
+    text_rect.center = (board_width/2), (board_height/2)
+    game_display.blit(text_surface, text_rect)
 
 
 def event_handler(game_exit, block_size, pos_change):
@@ -35,19 +37,26 @@ def event_handler(game_exit, block_size, pos_change):
         if event.type == pygame.QUIT:
             game_exit = True
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
+            if event.key == pygame.K_LEFT and event_handler.previous_event != pygame.K_RIGHT:
                 pos_change[0] = -speed * block_size
                 pos_change[1] = 0
-            if event.key == pygame.K_RIGHT:
+                event_handler.previous_event = pygame.K_LEFT
+            if event.key == pygame.K_RIGHT and event_handler.previous_event != pygame.K_LEFT:
                 pos_change[0] = speed * block_size
                 pos_change[1] = 0
-            if event.key == pygame.K_UP:
+                event_handler.previous_event = pygame.K_RIGHT
+            if event.key == pygame.K_UP and event_handler.previous_event != pygame.K_DOWN:
                 pos_change[0] = 0
                 pos_change[1] = -speed * block_size
-            if event.key == pygame.K_DOWN:
+                event_handler.previous_event = pygame.K_UP
+            if event.key == pygame.K_DOWN and event_handler.previous_event != pygame.K_UP:
                 pos_change[0] = 0
                 pos_change[1] = speed * block_size
+                event_handler.previous_event = pygame.K_DOWN
     return game_exit
+
+
+event_handler.previous_event = 0
 
 
 def snake_draw(snake_body, block_size):
