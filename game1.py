@@ -9,7 +9,6 @@ green = (0, 180, 0)
 blue = (0, 0, 220)
 
 speed = 1
-block_size = 10
 FPS = 30
 
 board_width = 800
@@ -31,7 +30,7 @@ def message_to_screen(message, color):
     game_display.blit(screen_text, [board_width/4, board_height/2])
 
 
-def event_handler(game_exit, pos_change):
+def event_handler(game_exit, block_size, pos_change):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             game_exit = True
@@ -51,14 +50,14 @@ def event_handler(game_exit, pos_change):
     return game_exit
 
 
-def snake_draw(snake_body):
+def snake_draw(snake_body, block_size):
     for snake_piece in snake_body:
         game_display.fill(green, [snake_piece[0], snake_piece[1], block_size, block_size])
 
 
-def random_pos():
-    return [round(random.randrange(0, (board_width - block_size) / 10)) * 10,
-            round(random.randrange(0, (board_height - block_size)) / 10) * 10]
+def random_pos(object_size):
+    return [round(random.randrange(0, (board_width - object_size))),
+            round(random.randrange(0, (board_height - object_size)))]
 
 
 # main game loop
@@ -68,14 +67,16 @@ def game_loop():
     pos_change = [0, 0]
     start_position = [board_width / 2, board_height / 2]  # x, y
     snake_head = start_position
-    apple_pos = random_pos()
+    block_size = 20
     snake_body = []
     snake_length = 1
+    apple_size = 50
+    apple_pos = random_pos(apple_size)
 
     while not game_exit:
         while game_over:
             game_display.fill(white)
-            message_to_screen("Game over (score: ?), press C to play again or Q to quit", red)
+            message_to_screen("Game over (score: %d), press C to play again or Q to quit" % (snake_length - 1), red)
             pygame.display.update()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -88,7 +89,7 @@ def game_loop():
                     if event.key == pygame.K_c:
                         game_loop()
 
-        game_exit = event_handler(game_exit, pos_change)
+        game_exit = event_handler(game_exit, block_size, pos_change)
 
         # MAIN LOGIC
         snake_head[0] += pos_change[0]
@@ -102,8 +103,12 @@ def game_loop():
                 game_over = True
 
         # eat apple
-        if snake_head[0] == apple_pos[0] and snake_head[1] == apple_pos[1]:
-            apple_pos = random_pos()
+        if ((apple_pos[0] <= snake_head[0] < (apple_pos[0] + apple_size)) or\
+            (apple_pos[0] <= snake_head[0] + block_size < (apple_pos[0] + apple_size)))\
+            and \
+            ((apple_pos[1] <= snake_head[1] < (apple_pos[1] + apple_size)) or\
+             (apple_pos[1] <= snake_head[1] + block_size < (apple_pos[1] + apple_size))):
+            apple_pos = random_pos(apple_size)
             snake_length += 1
 
         snake_body.append(snake_head.copy())
@@ -111,10 +116,11 @@ def game_loop():
             del snake_body[0]
 
         # drawing stuff
-        game_display.fill(white)  # clean the game board
-        game_display.fill(red, [apple_pos[0], apple_pos[1], block_size, block_size])
-        snake_draw(snake_body)
-        pygame.display.update()  # frame done, render it
+        if not game_over:
+            game_display.fill(white)  # clean the game board
+            game_display.fill(red, [apple_pos[0], apple_pos[1], apple_size, apple_size])
+            snake_draw(snake_body, block_size)
+            pygame.display.update()  # frame done, render it
 
         clock.tick(FPS)  # don't change fps for difficulty, change movement speed
 
