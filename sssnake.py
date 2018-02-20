@@ -3,6 +3,7 @@ import random
 from enum import Enum
 from time import sleep
 
+
 class Color(Enum):
     white = (252, 252, 252)
     black = (0, 0, 0)
@@ -16,6 +17,7 @@ class SssnakeGame:
     speed = 1
     FPS = 30
     initial_snake_length = 2
+    font_name = "ARCADE.TTF"
 
     board_width = 800
     board_height = 600
@@ -27,13 +29,23 @@ class SssnakeGame:
         pygame.display.set_caption("Sssnake")
 
         #  object elements
-        self.font = pygame.font.SysFont(None, 25)
+        self.small_font = pygame.font.Font(self.font_name, 25)  # pygame.font.SysFont(None, 25)
+        self.medium_font = pygame.font.Font(self.font_name, 50)
+        self.large_font = pygame.font.Font(self.font_name, 80)
         self.clock = pygame.time.Clock()
         self.img_head = pygame.image.load('snake_head.png')
 
-    def message_to_screen(self, message, color, y_displacement=0):
-        text_surface = self.font.render(message, True, color)
-        text_rect = text_surface.get_rect()
+    def text_object(self, message, color, size):
+        if size == "small":
+            text_surface = self.small_font.render(message, True, color)
+        elif size == "medium":
+            text_surface = self.medium_font.render(message, True, color)
+        elif size == "large":
+            text_surface = self.large_font.render(message, True, color)
+        return text_surface, text_surface.get_rect()
+
+    def message_to_screen(self, message, color, size="small", y_displacement=0):
+        text_surface, text_rect = self.text_object(message, color, size)
         text_rect.center = (self.board_width / 2), (self.board_height / 2 + y_displacement)
         self.game_display.blit(text_surface, text_rect)
 
@@ -80,13 +92,13 @@ class SssnakeGame:
     def game_loop(self):
         game_exit = False
         game_over = False
-        start_position = [self.board_width / 2, self.board_height / 2]  # x, y
-        pos_change = [10, 0]  # start moving right, x speed = 10
         direction = "right"
         snake_block_size = 20
-        snake_head = start_position
         snake_body = []
         snake_length = self.initial_snake_length
+        start_position = [self.board_width / 2, self.board_height / 2]  # x, y
+        snake_head = start_position
+        pos_change = [self.speed * snake_block_size, 0]  # start moving right, x speed = ...
         apple_size = 50
         apple_pos = self.random_pos(apple_size)
 
@@ -94,8 +106,10 @@ class SssnakeGame:
         while not game_exit:
             while game_over:
                 self.game_display.fill(Color.white.value)
-                self.message_to_screen("Game over (score: %d)" % (snake_length - self.initial_snake_length), Color.red.value, -50)
-                self.message_to_screen("Press C to play again or Q to quit", Color.black.value, 50)
+                self.message_to_screen("Game over", Color.red.value, "large", -100)
+                self.message_to_screen("Score: %d" % (snake_length - self.initial_snake_length),
+                                       Color.black.value, "medium", -20)
+                self.message_to_screen("Press C to play again or Q to quit", Color.black.value, "medium", 100)
                 pygame.display.update()
                 sleep(0.1)
                 for event in pygame.event.get():
@@ -116,7 +130,8 @@ class SssnakeGame:
             snake_head[1] += pos_change[1]
 
             # check for collisions
-            if snake_head[0] >= self.board_width or snake_head[0] < 0 or snake_head[1] >= self.board_height or snake_head[1] < 0:
+            if snake_head[0] >= self.board_width or snake_head[0] < 0 or \
+                    snake_head[1] >= self.board_height or snake_head[1] < 0:
                 game_over = True
             for snake_element in snake_body[:-1]:
                 if snake_element == snake_head:
@@ -143,6 +158,7 @@ class SssnakeGame:
                 pygame.display.update()  # frame done, render it
 
                 self.clock.tick(self.FPS)  # don't change fps for difficulty, change movement speed
+        # main game loop end
 
         pygame.quit()
         quit()
