@@ -9,7 +9,7 @@ class SssnakeGame:
 
     def __init__(self):
         # initialize pygame, sound & display window
-        pygame.mixer.pre_init(44100, 16, 2, 4096)  # frequency, size, channels, buffersize
+        pygame.mixer.pre_init(AUDIOFREQUENCY, AUDIOSIZE, AUDIOCHANNELS, AUDIOBUFFERSIZE)
         pygame.init()
         self.game_display = pygame.display.set_mode((BOARD_WIDTH, BOARD_HEIGHT))
         pygame.display.set_caption("Sssnake")
@@ -35,9 +35,14 @@ class SssnakeGame:
             text_surface = self.large_font.render(message, True, color)
         return text_surface, text_surface.get_rect()
 
-    def message_to_screen(self, message, color, size="small", y_displacement=0):
+    def message_to_center(self, message, color, size="small", y_displacement=0):
         text_surface, text_rect = self.text_object(message, color, size)
         text_rect.center = (BOARD_WIDTH / 2), (BOARD_HEIGHT / 2 + y_displacement)
+        self.game_display.blit(text_surface, text_rect)
+
+    def message_to_left(self, message, color, size="small", x_displacement=0, y_displacement=0):
+        text_surface, text_rect = self.text_object(message, color, size)
+        text_rect.topleft = x_displacement, (BOARD_HEIGHT / 2 + y_displacement)
         self.game_display.blit(text_surface, text_rect)
 
     def score_to_screen(self, message):
@@ -65,15 +70,36 @@ class SssnakeGame:
                 if event.type == SONG_END:
                     SssnakeGame.play_a_different_song()
             self.game_display.fill(WHITE)
-            self.message_to_screen("Welcome to Sssnake", GREEN, "large", -100)
-            self.message_to_screen("Don't run into edges or yourself", BLACK, "small", 0)
-            self.message_to_screen("Eat the red apples", BLACK, "small", 50)
-            self.message_to_screen("Press C to play or Q to quit", BLACK, "medium", 100)
+            self.message_to_center("Welcome to Sssnake", GREEN, "large", -150)
+            self.message_to_center("Eat the red apples", BLACK, "small", -50)
+            self.message_to_center("Don't run into edges or yourself", BLACK, "small", 0)
+            self.message_to_center("Press...", BLACK, "medium", 100)
+            self.message_to_left("C to play", BLACK, "medium", 250, 140)
+            self.message_to_left("P to pause", BLACK, "medium", 250, 180)
+            self.message_to_left("Q to quit", BLACK, "medium", 250, 220)
             pygame.display.update()
             self.clock.tick(FPS_NORMAL)
 
-    @staticmethod
-    def event_handler(game_exit, block_size, pos_change, direction):
+    def pause(self):
+        paused = True
+        while paused:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_c:
+                        paused = False
+                    elif event.key == pygame.K_q:
+                        pygame.quit()
+                        quit()
+            self.game_display.fill(WHITE)
+            self.message_to_center("PAUSED", BLACK, "large", -100)
+            self.message_to_center("Press C to continue or Q to quit", BLACK, "small", 150)
+            pygame.display.update()
+            self.clock.tick(FPS_INTRO)
+
+    def event_handler(self, game_exit, block_size, pos_change, direction):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_exit = True
@@ -94,6 +120,8 @@ class SssnakeGame:
                     pos_change[0] = 0
                     pos_change[1] = SPEED * block_size
                     direction = "down"
+                if event.key == pygame.K_p:
+                    self.pause()
             if event.type == SONG_END:
                 SssnakeGame.play_a_different_song()
         return game_exit, direction
@@ -124,7 +152,8 @@ class SssnakeGame:
         for snake_piece in snake_body[:-1]:
             self.game_display.fill(GREEN, [snake_piece[0], snake_piece[1], block_size, block_size])
 
-    def random_pos(self, object_size):
+    @staticmethod
+    def random_pos(object_size):
         return [round(random.randrange(0, (BOARD_WIDTH - object_size))),
                 round(random.randrange(0, (BOARD_HEIGHT - object_size)))]
 
@@ -139,7 +168,7 @@ class SssnakeGame:
         snake_head = start_position
         pos_change = [SPEED * snake_block_size, 0]  # start moving right, x speed = ...
         apple_size = 40
-        apple_pos = self.random_pos(apple_size)
+        apple_pos = SssnakeGame.random_pos(apple_size)
 
         SssnakeGame.play_a_different_song()  # start a new song
 
@@ -147,10 +176,11 @@ class SssnakeGame:
         while not game_exit:
             while game_over:
                 self.game_display.fill(WHITE)
-                self.message_to_screen("Game over", RED, "large", -100)
-                self.message_to_screen("Score: %d" % (snake_length - INITIAL_SNAKE_LENGTH),
+                self.message_to_center("Game over", RED, "large", -100)
+                self.message_to_center("Score: %d" % (snake_length - INITIAL_SNAKE_LENGTH),
                                        BLACK, "medium", -20)
-                self.message_to_screen("Press C to play again or Q to quit", BLACK, "medium", 100)
+                self.message_to_center("Press C to play again", BLACK, "small", 100)
+                self.message_to_center("or Q to quit", BLACK, "small", 150)
                 pygame.display.update()
                 self.clock.tick(FPS_NORMAL)
                 for event in pygame.event.get():
@@ -166,7 +196,7 @@ class SssnakeGame:
                     if event.type == SONG_END:
                         SssnakeGame.play_a_different_song()
 
-            game_exit, direction = SssnakeGame.event_handler(game_exit, snake_block_size, pos_change, direction)
+            game_exit, direction = self.event_handler(game_exit, snake_block_size, pos_change, direction)
 
             # MAIN LOGIC
             snake_head[0] += pos_change[0]
