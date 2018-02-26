@@ -6,7 +6,7 @@ os.environ['TCL_LIBRARY'] = os.path.join(PYTHON_INSTALL_DIR, 'tcl', 'tcl8.6')
 os.environ['TK_LIBRARY'] = os.path.join(PYTHON_INSTALL_DIR, 'tcl', 'tk8.6')
 
 
-includes = ["main.py", "sssnake.py", "README.rd", SNAKE_HEAD, APPLE, BITE, PUNCH, FONT_NAME, ICON]
+includes = ["main.py", "sssnake.py", "README.md", SNAKE_HEAD, APPLE, BITE, PUNCH, FONT_NAME, ICON]
 includes.extend(SONGS)
 
 cx_Freeze.setup(
