@@ -1,8 +1,7 @@
 import pygame
 import random
-
 import sys
-
+from os import path
 from settings import *
 
 _currently_playing_song = None
@@ -29,6 +28,16 @@ class SssnakeGame:
         self.img_apple = pygame.image.load(APPLE)
         self.sound_apple = pygame.mixer.Sound(BITE)
         self.sound_punch = pygame.mixer.Sound(PUNCH)
+        self.load_data()
+
+    def load_data(self):
+        # load high score
+        self.dir = path.dirname(__file__)
+        with open(path.join(self.dir, HS_FILE), 'r') as f:
+            try:
+                self.highscore = int(f.read())
+            except:
+                self.highscore = 0
 
     def text_object(self, message, color, size):
         if size == "small":
@@ -77,10 +86,11 @@ class SssnakeGame:
             self.message_to_center("Welcome to Sssnake", GREEN, "large", -150)
             self.message_to_center("Eat the red apples", BLACK, "small", -50)
             self.message_to_center("Don't run into edges or yourself", BLACK, "small", 0)
-            self.message_to_center("Press...", BLACK, "medium", 100)
-            self.message_to_left("C to play", BLACK, "medium", 250, 140)
-            self.message_to_left("P to pause", BLACK, "medium", 250, 180)
-            self.message_to_left("Q to quit", BLACK, "medium", 250, 220)
+            self.message_to_center("High score: " + str(self.highscore), RED, "medium", 50)
+            self.message_to_center("Press...", BLACK, "small", 120)
+            self.message_to_left("C to play", BLACK, "medium", 270, 150)
+            self.message_to_left("P to pause", BLACK, "medium", 270, 190)
+            self.message_to_left("Q to quit", BLACK, "medium", 270, 230)
             pygame.display.update()
             self.clock.tick(FPS_NORMAL)
 
@@ -183,6 +193,8 @@ class SssnakeGame:
                 self.message_to_center("Game over", RED, "large", -100)
                 self.message_to_center("Score: %d" % (snake_length - INITIAL_SNAKE_LENGTH),
                                        BLACK, "medium", -20)
+                self.message_to_center("High score: %d" % self.highscore,
+                                       BLACK, "medium", 20)
                 self.message_to_center("Press C to play again", BLACK, "small", 100)
                 self.message_to_center("or Q to quit", BLACK, "small", 150)
                 pygame.display.update()
@@ -206,26 +218,9 @@ class SssnakeGame:
             snake_head[0] += pos_change[0]
             snake_head[1] += pos_change[1]
 
-            # check for collisions
-            if (snake_head[0] >= BOARD_WIDTH or snake_head[0] < 0 or 
-                    snake_head[1] >= BOARD_HEIGHT or snake_head[1] < 0):
-                game_over = True
-            for snake_element in snake_body[:-1]:
-                if snake_element == snake_head:
-                    game_over = True
-            if game_over:
-                self.sound_punch.play()
+            game_over = self.collision_check(game_over, snake_body, snake_head, snake_length)
 
-            # eat apple
-            if (((apple_pos[0] <= snake_head[0] < (apple_pos[0] + apple_size)) or 
-                (apple_pos[0] <= snake_head[0] + snake_block_size < (apple_pos[0] + apple_size))) 
-                    and 
-                    ((apple_pos[1] <= snake_head[1] < (apple_pos[1] + apple_size)) or 
-                     (apple_pos[1] <= snake_head[1] + snake_block_size < (apple_pos[1] + apple_size)))):
-                apple_pos = self.random_pos(apple_size)
-                snake_length += 1
-                # TODO: don't place apples over the snake
-                self.sound_apple.play()
+            apple_pos, snake_length = self.eat_apple(apple_pos, apple_size, snake_block_size, snake_head, snake_length)
 
             snake_body.append(snake_head.copy())
             if len(snake_body) > snake_length:
@@ -234,7 +229,6 @@ class SssnakeGame:
             # drawing stuff
             if not game_over:
                 self.game_display.fill(WHITE)  # clean the game board
-                #self.game_display.fill(RED, [apple_pos[0], apple_pos[1], apple_size, apple_size])
                 self.game_display.blit(self.img_apple, [apple_pos[0], apple_pos[1]])
                 self.snake_draw(snake_body, snake_block_size, direction)
                 self.score_to_screen("%d" % (snake_length - INITIAL_SNAKE_LENGTH))
@@ -245,3 +239,30 @@ class SssnakeGame:
 
         pygame.quit()
         sys.exit()
+
+    def collision_check(self, game_over, snake_body, snake_head, snake_length):
+        if (snake_head[0] >= BOARD_WIDTH or snake_head[0] < 0 or
+                snake_head[1] >= BOARD_HEIGHT or snake_head[1] < 0):
+            game_over = True
+        for snake_element in snake_body[:-1]:
+            if snake_element == snake_head:
+                game_over = True
+        if game_over:
+            self.sound_punch.play()
+            if snake_length - INITIAL_SNAKE_LENGTH > self.highscore:
+                self.highscore = snake_length - INITIAL_SNAKE_LENGTH
+                with open(path.join(self.dir, HS_FILE), 'w') as f:
+                    f.write(str(self.highscore))
+        return game_over
+
+    def eat_apple(self, apple_pos, apple_size, snake_block_size, snake_head, snake_length):
+        if (((apple_pos[0] <= snake_head[0] < (apple_pos[0] + apple_size)) or
+             (apple_pos[0] <= snake_head[0] + snake_block_size < (apple_pos[0] + apple_size)))
+                and
+                ((apple_pos[1] <= snake_head[1] < (apple_pos[1] + apple_size)) or
+                 (apple_pos[1] <= snake_head[1] + snake_block_size < (apple_pos[1] + apple_size)))):
+            apple_pos = self.random_pos(apple_size)
+            snake_length += 1
+            # TODO: don't place apples over the snake
+            self.sound_apple.play()
+        return apple_pos, snake_length
