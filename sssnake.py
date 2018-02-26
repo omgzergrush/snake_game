@@ -1,9 +1,13 @@
 import pygame
 import random
+
+import sys
+
 from settings import *
 
 _currently_playing_song = None
 SONG_END = pygame.USEREVENT + 1
+
 
 class SssnakeGame:
 
@@ -13,7 +17,7 @@ class SssnakeGame:
         pygame.init()
         self.game_display = pygame.display.set_mode((BOARD_WIDTH, BOARD_HEIGHT))
         pygame.display.set_caption("Sssnake")
-        pygame.display.set_icon(pygame.image.load(RESOURCES_FOLDER + 'apple_icon.bmp'))
+        pygame.display.set_icon(pygame.image.load(ICON))
         pygame.mixer.music.set_endevent(SONG_END)
 
         #  object elements
@@ -21,10 +25,10 @@ class SssnakeGame:
         self.medium_font = pygame.font.Font(FONT_NAME, 50)
         self.large_font = pygame.font.Font(FONT_NAME, 80)
         self.clock = pygame.time.Clock()
-        self.img_head = pygame.image.load(RESOURCES_FOLDER + 'snake_head.png')
-        self.img_apple = pygame.image.load(RESOURCES_FOLDER + 'apple.png')
-        self.sound_apple = pygame.mixer.Sound(AUDIO_FOLDER + 'bite.wav')
-        self.sound_punch = pygame.mixer.Sound(AUDIO_FOLDER + 'sharp_punch.wav')
+        self.img_head = pygame.image.load(SNAKE_HEAD)
+        self.img_apple = pygame.image.load(APPLE)
+        self.sound_apple = pygame.mixer.Sound(BITE)
+        self.sound_punch = pygame.mixer.Sound(PUNCH)
 
     def text_object(self, message, color, size):
         if size == "small":
@@ -59,14 +63,14 @@ class SssnakeGame:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    quit()
+                    sys.exit()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_c:
                         intro = False
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_q:
                         pygame.quit()
-                        quit()
+                        sys.exit()
                 if event.type == SONG_END:
                     SssnakeGame.play_a_different_song()
             self.game_display.fill(WHITE)
@@ -86,13 +90,13 @@ class SssnakeGame:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    quit()
+                    sys.exit()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_c:
                         paused = False
                     elif event.key == pygame.K_q:
                         pygame.quit()
-                        quit()
+                        sys.exit()
             self.game_display.fill(WHITE)
             self.message_to_center("PAUSED", BLACK, "large", -100)
             self.message_to_center("Press C to continue or Q to quit", BLACK, "small", 150)
@@ -108,19 +112,19 @@ class SssnakeGame:
                     pos_change[0] = -SPEED * block_size
                     pos_change[1] = 0
                     direction = "left"
-                if event.key == pygame.K_RIGHT and direction != "left":
+                elif event.key == pygame.K_RIGHT and direction != "left":
                     pos_change[0] = SPEED * block_size
                     pos_change[1] = 0
                     direction = "right"
-                if event.key == pygame.K_UP and direction != "down":
+                elif event.key == pygame.K_UP and direction != "down":
                     pos_change[0] = 0
                     pos_change[1] = -SPEED * block_size
                     direction = "up"
-                if event.key == pygame.K_DOWN and direction != "up":
+                elif event.key == pygame.K_DOWN and direction != "up":
                     pos_change[0] = 0
                     pos_change[1] = SPEED * block_size
                     direction = "down"
-                if event.key == pygame.K_p:
+                elif event.key == pygame.K_p:
                     self.pause()
             if event.type == SONG_END:
                 SssnakeGame.play_a_different_song()
@@ -240,4 +244,4 @@ class SssnakeGame:
         # main game loop end
 
         pygame.quit()
-        quit()
+        sys.exit()
