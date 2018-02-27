@@ -1,7 +1,7 @@
 # Sssnake game
 Author: Pekka Alho
 
-Version: 0.1
+Version: 0.2
 
 Pygame project based on thenewboston's [Pygame (Python Game Development) Tutorial](https://www.youtube.com/watch?v=K5F-aGDIYaM)
 
