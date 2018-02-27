@@ -96,6 +96,9 @@ class SssnakeGame:
 
     def pause(self):
         paused = True
+        self.message_to_center("PAUSED", BLACK, "large", -100)
+        self.message_to_center("Press C to continue or Q to quit", BLACK, "small", 150)
+        pygame.display.update()
         while paused:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -107,10 +110,6 @@ class SssnakeGame:
                     elif event.key == pygame.K_q:
                         pygame.quit()
                         sys.exit()
-            self.game_display.fill(WHITE)
-            self.message_to_center("PAUSED", BLACK, "large", -100)
-            self.message_to_center("Press C to continue or Q to quit", BLACK, "small", 150)
-            pygame.display.update()
             self.clock.tick(FPS_INTRO)
 
     def event_handler(self, game_exit, block_size, pos_change, direction):
@@ -220,7 +219,8 @@ class SssnakeGame:
 
             game_over = self.collision_check(game_over, snake_body, snake_head, snake_length)
 
-            apple_pos, snake_length = self.eat_apple(apple_pos, apple_size, snake_block_size, snake_head, snake_length)
+            apple_pos, snake_length = self.eat_apple(apple_pos, apple_size, snake_block_size,
+                                                     snake_head, snake_length,snake_body)
 
             snake_body.append(snake_head.copy())
             if len(snake_body) > snake_length:
@@ -255,14 +255,25 @@ class SssnakeGame:
                     f.write(str(self.highscore))
         return game_over
 
-    def eat_apple(self, apple_pos, apple_size, snake_block_size, snake_head, snake_length):
-        if (((apple_pos[0] <= snake_head[0] < (apple_pos[0] + apple_size)) or
-             (apple_pos[0] <= snake_head[0] + snake_block_size < (apple_pos[0] + apple_size)))
-                and
-                ((apple_pos[1] <= snake_head[1] < (apple_pos[1] + apple_size)) or
-                 (apple_pos[1] <= snake_head[1] + snake_block_size < (apple_pos[1] + apple_size)))):
-            apple_pos = self.random_pos(apple_size)
+    def eat_apple(self, apple_pos, apple_size, snake_block_size, snake_head, snake_length, snake_body):
+        if SssnakeGame.apple_collision_check(apple_pos, snake_head, apple_size, snake_block_size):
+            free_space_found = False
+            while not free_space_found:
+                if not free_space_found:
+                    apple_pos = self.random_pos(apple_size)
+                free_space_found = True
+                for piece in snake_body:
+                    if SssnakeGame.apple_collision_check(apple_pos, piece, apple_size, snake_block_size):
+                        free_space_found = False
+
             snake_length += 1
-            # TODO: don't place apples over the snake
             self.sound_apple.play()
         return apple_pos, snake_length
+
+    @staticmethod
+    def apple_collision_check(apple_pos, snake_head, apple_size, snake_block_size):
+        return (((apple_pos[0] <= snake_head[0] < (apple_pos[0] + apple_size)) or
+          (apple_pos[0] <= snake_head[0] + snake_block_size < (apple_pos[0] + apple_size)))
+         and
+         ((apple_pos[1] <= snake_head[1] < (apple_pos[1] + apple_size)) or
+          (apple_pos[1] <= snake_head[1] + snake_block_size < (apple_pos[1] + apple_size))))
