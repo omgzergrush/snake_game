@@ -4,7 +4,6 @@ import sys
 from os import path
 from settings import *
 
-_currently_playing_song = None
 SONG_END = pygame.USEREVENT + 1
 
 
@@ -20,10 +19,11 @@ class SssnakeGame:
         pygame.mixer.music.set_endevent(SONG_END)
 
         #  object elements
+        self.clock = pygame.time.Clock()
         self.small_font = pygame.font.Font(FONT_NAME, 25)  # pygame.font.SysFont(None, 25)
         self.medium_font = pygame.font.Font(FONT_NAME, 50)
         self.large_font = pygame.font.Font(FONT_NAME, 80)
-        self.clock = pygame.time.Clock()
+        self.currently_playing_song = None
         self.img_head = pygame.image.load(SNAKE_HEAD)
         self.img_apple = pygame.image.load(APPLE)
         self.sound_apple = pygame.mixer.Sound(BITE)
@@ -38,30 +38,6 @@ class SssnakeGame:
                 self.highscore = int(f.read())
             except:
                 self.highscore = 0
-
-    def text_object(self, message, color, size):
-        if size == "small":
-            text_surface = self.small_font.render(message, True, color)
-        elif size == "medium":
-            text_surface = self.medium_font.render(message, True, color)
-        elif size == "large":
-            text_surface = self.large_font.render(message, True, color)
-        return text_surface, text_surface.get_rect()
-
-    def message_to_center(self, message, color, size="small", y_displacement=0):
-        text_surface, text_rect = self.text_object(message, color, size)
-        text_rect.center = (BOARD_WIDTH / 2), (BOARD_HEIGHT / 2 + y_displacement)
-        self.game_display.blit(text_surface, text_rect)
-
-    def message_to_left(self, message, color, size="small", x_displacement=0, y_displacement=0):
-        text_surface, text_rect = self.text_object(message, color, size)
-        text_rect.topleft = x_displacement, (BOARD_HEIGHT / 2 + y_displacement)
-        self.game_display.blit(text_surface, text_rect)
-
-    def score_to_screen(self, message):
-        text_surface, text_rect = self.text_object(message, BLACK, "small")
-        text_rect.topleft = 50, 10
-        self.game_display.blit(text_surface, text_rect)
 
     def game_intro(self):
         intro = True
@@ -81,7 +57,7 @@ class SssnakeGame:
                         pygame.quit()
                         sys.exit()
                 if event.type == SONG_END:
-                    SssnakeGame.play_a_different_song()
+                    self.play_a_different_song()
             self.game_display.fill(WHITE)
             self.message_to_center("Welcome to Sssnake", GREEN, "large", -150)
             self.message_to_center("Eat the red apples", BLACK, "small", -60)
@@ -93,82 +69,6 @@ class SssnakeGame:
             self.message_to_left("Q to quit", BLACK, "medium", 270, 230)
             pygame.display.update()
             self.clock.tick(FPS_NORMAL)
-
-    def pause(self):
-        paused = True
-        self.message_to_center("PAUSED", BLACK, "large", -100)
-        self.message_to_center("Press C to continue or Q to quit", BLACK, "small", 150)
-        pygame.display.update()
-        while paused:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_c:
-                        paused = False
-                    elif event.key == pygame.K_q:
-                        pygame.quit()
-                        sys.exit()
-            self.clock.tick(FPS_INTRO)
-
-    def event_handler(self, game_exit, block_size, pos_change, direction):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                game_exit = True
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT and direction != "right":
-                    pos_change[0] = -SPEED * block_size
-                    pos_change[1] = 0
-                    direction = "left"
-                elif event.key == pygame.K_RIGHT and direction != "left":
-                    pos_change[0] = SPEED * block_size
-                    pos_change[1] = 0
-                    direction = "right"
-                elif event.key == pygame.K_UP and direction != "down":
-                    pos_change[0] = 0
-                    pos_change[1] = -SPEED * block_size
-                    direction = "up"
-                elif event.key == pygame.K_DOWN and direction != "up":
-                    pos_change[0] = 0
-                    pos_change[1] = SPEED * block_size
-                    direction = "down"
-                elif event.key == pygame.K_p:
-                    self.pause()
-            if event.type == SONG_END:
-                SssnakeGame.play_a_different_song()
-        return game_exit, direction
-
-    @staticmethod
-    def play_a_different_song():
-        global _currently_playing_song
-        next_song = random.choice(SONGS)
-        while next_song == _currently_playing_song:
-            next_song = random.choice(SONGS)
-        _currently_playing_song = next_song
-        pygame.mixer.music.load(next_song)
-        pygame.mixer.music.set_volume(MUSIC_VOLUME)
-        pygame.mixer.music.play()
-
-    def snake_draw(self, snake_body, block_size, direction):
-        if direction == "right":
-            head = self.img_head
-        elif direction == "left":
-            head = pygame.transform.rotate(self.img_head, 180)
-        elif direction == "up":
-            head = pygame.transform.rotate(self.img_head, 90)
-        elif direction == "down":
-            head = pygame.transform.rotate(self.img_head, 270)
-        else:
-            assert False
-        self.game_display.blit(head, [snake_body[-1][0], snake_body[-1][1]])
-        for snake_piece in snake_body[:-1]:
-            self.game_display.fill(GREEN, [snake_piece[0], snake_piece[1], block_size, block_size])
-
-    @staticmethod
-    def random_pos(object_size):
-        return [round(random.randrange(0, (BOARD_WIDTH - object_size))),
-                round(random.randrange(0, (BOARD_HEIGHT - object_size)))]
 
     def game_loop(self):
         game_exit = False
@@ -183,7 +83,7 @@ class SssnakeGame:
         apple_size = 40
         apple_pos = SssnakeGame.random_pos(apple_size)
 
-        SssnakeGame.play_a_different_song()  # start a new song
+        self.play_a_different_song()  # start a new song
 
         # main game loop start
         while not game_exit:
@@ -240,6 +140,104 @@ class SssnakeGame:
         pygame.quit()
         sys.exit()
 
+    def pause(self):
+        paused = True
+        self.message_to_center("PAUSED", BLACK, "large", -100)
+        self.message_to_center("Press C to continue or Q to quit", BLACK, "small", 150)
+        pygame.display.update()
+        while paused:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_c:
+                        paused = False
+                    elif event.key == pygame.K_q:
+                        pygame.quit()
+                        sys.exit()
+            self.clock.tick(FPS_INTRO)
+
+    def event_handler(self, game_exit, block_size, pos_change, direction):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                game_exit = True
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT and direction != "right":
+                    pos_change[0] = -SPEED * block_size
+                    pos_change[1] = 0
+                    direction = "left"
+                elif event.key == pygame.K_RIGHT and direction != "left":
+                    pos_change[0] = SPEED * block_size
+                    pos_change[1] = 0
+                    direction = "right"
+                elif event.key == pygame.K_UP and direction != "down":
+                    pos_change[0] = 0
+                    pos_change[1] = -SPEED * block_size
+                    direction = "up"
+                elif event.key == pygame.K_DOWN and direction != "up":
+                    pos_change[0] = 0
+                    pos_change[1] = SPEED * block_size
+                    direction = "down"
+                elif event.key == pygame.K_p:
+                    self.pause()
+            if event.type == SONG_END:
+                SssnakeGame.play_a_different_song()
+        return game_exit, direction
+
+    def text_object(self, message, color, size):
+        if size == "small":
+            text_surface = self.small_font.render(message, True, color)
+        elif size == "medium":
+            text_surface = self.medium_font.render(message, True, color)
+        elif size == "large":
+            text_surface = self.large_font.render(message, True, color)
+        return text_surface, text_surface.get_rect()
+
+    def message_to_center(self, message, color, size="small", y_displacement=0):
+        text_surface, text_rect = self.text_object(message, color, size)
+        text_rect.center = (BOARD_WIDTH / 2), (BOARD_HEIGHT / 2 + y_displacement)
+        self.game_display.blit(text_surface, text_rect)
+
+    def message_to_left(self, message, color, size="small", x_displacement=0, y_displacement=0):
+        text_surface, text_rect = self.text_object(message, color, size)
+        text_rect.topleft = x_displacement, (BOARD_HEIGHT / 2 + y_displacement)
+        self.game_display.blit(text_surface, text_rect)
+
+    def score_to_screen(self, message):
+        text_surface, text_rect = self.text_object(message, BLACK, "small")
+        text_rect.topleft = 50, 10
+        self.game_display.blit(text_surface, text_rect)
+
+    def play_a_different_song(self):
+        next_song = random.choice(SONGS)
+        while next_song == self.currently_playing_song:
+            next_song = random.choice(SONGS)
+        self.currently_playing_song = next_song
+        pygame.mixer.music.load(next_song)
+        pygame.mixer.music.set_volume(MUSIC_VOLUME)
+        pygame.mixer.music.play()
+
+    def snake_draw(self, snake_body, block_size, direction):
+        if direction == "right":
+            head = self.img_head
+        elif direction == "left":
+            head = pygame.transform.rotate(self.img_head, 180)
+        elif direction == "up":
+            head = pygame.transform.rotate(self.img_head, 90)
+        elif direction == "down":
+            head = pygame.transform.rotate(self.img_head, 270)
+        else:
+            assert False
+        self.game_display.blit(head, [snake_body[-1][0], snake_body[-1][1]])
+        for snake_piece in snake_body[:-1]:
+            self.game_display.fill(GREEN, [snake_piece[0], snake_piece[1], block_size, block_size])
+
+    @staticmethod
+    def random_pos(object_size):
+        return [round(random.randrange(0, (BOARD_WIDTH - object_size))),
+                round(random.randrange(0, (BOARD_HEIGHT - object_size)))]
+
     def collision_check(self, game_over, snake_body, snake_head, snake_length):
         if (snake_head[0] >= BOARD_WIDTH or snake_head[0] < 0 or
                 snake_head[1] >= BOARD_HEIGHT or snake_head[1] < 0):
@@ -265,7 +263,6 @@ class SssnakeGame:
                 for piece in snake_body:
                     if SssnakeGame.apple_collision_check(apple_pos, piece, apple_size, snake_block_size):
                         free_space_found = False
-
             snake_length += 1
             self.sound_apple.play()
         return apple_pos, snake_length
