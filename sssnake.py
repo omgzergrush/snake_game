@@ -24,8 +24,10 @@ class SssnakeGame:
         self.medium_font = pygame.font.Font(FONT_NAME, 50)
         self.large_font = pygame.font.Font(FONT_NAME, 80)
         self.currently_playing_song = None
-        self.img_head = pygame.image.load(SNAKE_HEAD)
-        self.img_apple = pygame.image.load(APPLE)
+        self.img_head = pygame.image.load(SNAKE_HEAD).convert()
+        self.img_apple = pygame.image.load(APPLE).convert()
+        self.img_head.set_colorkey(WHITE)  # set image background color as transparent
+        self.img_apple.set_colorkey(WHITE)
         self.sound_apple = pygame.mixer.Sound(BITE)
         self.sound_punch = pygame.mixer.Sound(PUNCH)
         self.load_data()
@@ -163,6 +165,7 @@ class SssnakeGame:
             if event.type == pygame.QUIT:
                 game_exit = True
             if event.type == pygame.KEYDOWN:
+                # XXX: possible to make an U-turn and hit yourself!
                 if event.key == pygame.K_LEFT and direction != "right":
                     pos_change[0] = -SPEED * block_size
                     pos_change[1] = 0
